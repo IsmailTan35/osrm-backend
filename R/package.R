@@ -24,7 +24,7 @@
 #' The "car" profile is set by default. Other possible profiles are "foot" and "bike".\cr\cr
 #' 
 #' A typical setup, corresponding to the Docker example, would be:\cr  
-#' \code{options(osrm.server = "http://0.0.0.0:5000/", osrm.profile = "car")}
+#' \code{options(osrm.server = "http://0.0.0.0:9000/", osrm.profile = "car")}
 #' 
 #' 
 #' @docType package

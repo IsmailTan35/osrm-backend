@@ -36,7 +36,7 @@ if(home){
   
   ############## ONLY LOCAL ############################################
   if(localtest){
-    options(osrm.server = "http://0.0.0.0:5000/", osrm.profile = "bike")
+    options(osrm.server = "http://0.0.0.0:9000/", osrm.profile = "bike")
     trips <- osrmTrip(loc = apotheke.sf, returnclass = "sf")
     expect_true(methods::is(trips[[1]]$trip, "sf"))
   }

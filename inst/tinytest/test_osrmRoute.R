@@ -117,7 +117,7 @@ if(home){
   # 
   # ############## ONLY LOCAL ############################################
   if(localtest){
-    options(osrm.server = "http://0.0.0.0:5000/", osrm.profile = "test")
+    options(osrm.server = "http://0.0.0.0:9000/", osrm.profile = "test")
     # Travel path between points
     r <- osrmRoute(src = apotheke.sf[1, ], dst = apotheke.df[16, ],
                    returnclass="sf")

@@ -48,7 +48,7 @@ if(home){
 
   ############## ONLY LOCAL ############################################
   if(localtest){
-    options(osrm.server = "http://0.0.0.0:5000/", osrm.profile = "bike")
+    options(osrm.server = "http://0.0.0.0:9000/", osrm.profile = "bike")
     iso <- osrmIsochrone(loc = c(13.43,52.47), returnclass="sf")
     expect_true(methods::is(iso, "sf"))
     

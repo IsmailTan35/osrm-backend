@@ -117,7 +117,7 @@ if(home){
   
   ############## ONLY LOCAL ############################################
   if(localtest){
-    options(osrm.server = "http://0.0.0.0:5000/", osrm.profile = "test")
+    options(osrm.server = "http://0.0.0.0:9000/", osrm.profile = "test")
     A <- osrmTable(src = apotheke.df[1:10,c("id","lon","lat")],
                    dst = apotheke.df[1:10,c("id","lon","lat")],
                    measure = c("distance", "duration"))
