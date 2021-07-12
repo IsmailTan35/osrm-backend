@@ -1,0 +1,8 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^NEWS\.md$
+^\.travis\.yml$
+^data-raw$
+^img$
+^\.github$
+^README\.Rmd$
