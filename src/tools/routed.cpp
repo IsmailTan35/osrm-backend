@@ -109,7 +109,7 @@ inline unsigned generateServerProgramOptions(const int argc,
          value<std::string>(&ip_address)->default_value("0.0.0.0"),
          "IP address") //
         ("port,p",
-         value<int>(&ip_port)->default_value(9000),
+         value<int>(&ip_port)->default_value(5000),
          "TCP/IP port") //
         ("threads,t",
          value<int>(&requested_thread_num)->default_value(hardware_threads),
