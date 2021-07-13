@@ -1,165 +1,180 @@
+## Open Source Routing Machine
 
-# osrm R package
+| Linux / macOS | Windows | Code Coverage |
+| ------------- | ------- | ------------- |
+| [![Travis](https://travis-ci.org/Project-OSRM/osrm-backend.png?branch=master)](https://travis-ci.org/Project-OSRM/osrm-backend) | [![AppVeyor](https://ci.appveyor.com/api/projects/status/4iuo3s9gxprmcjjh)](https://ci.appveyor.com/project/DennisOSRM/osrm-backend) | [![Codecov](https://codecov.io/gh/Project-OSRM/osrm-backend/branch/master/graph/badge.svg)](https://codecov.io/gh/Project-OSRM/osrm-backend) |
 
-[![Version](http://www.r-pkg.org/badges/version/osrm)](https://CRAN.R-project.org/package=osrm/)
-![](http://cranlogs.r-pkg.org/badges/osrm?color=brightgreen) [![R build
-status](https://github.com/riatelab/osrm/workflows/R-CMD-check/badge.svg)](https://github.com/riatelab/osrm/actions)
-[![codecov](https://codecov.io/gh/riatelab/osrm/branch/master/graph/badge.svg?token=JOJNuBCH9M)](https://codecov.io/gh/riatelab/osrm)
+High performance routing engine written in C++14 designed to run on OpenStreetMap data.
 
-***Interface Between R and the OpenStreetMap-Based Routing Service
-[OSRM](http://project-osrm.org/)***
+The following services are available via HTTP API, C++ library interface and NodeJs wrapper:
+- Nearest - Snaps coordinates to the street network and returns the nearest matches
+- Route - Finds the fastest route between coordinates
+- Table - Computes the duration or distances of the fastest route between all pairs of supplied coordinates
+- Match - Snaps noisy GPS traces to the road network in the most plausible way
+- Trip - Solves the Traveling Salesman Problem using a greedy heuristic
+- Tile - Generates Mapbox Vector Tiles with internal routing metadata
 
-![](https://raw.githubusercontent.com/riatelab/osrm/master/img/cover.png)
+To quickly try OSRM use our [demo server](http://map.project-osrm.org) which comes with both the backend and a frontend on top.
 
-## Description
+For a quick introduction about how the road network is represented in OpenStreetMap and how to map specific road network features have a look at [this guide about mapping for navigation](https://www.mapbox.com/mapping/mapping-for-navigation/).
 
-OSRM is a routing service based on OpenStreetMap data. See
-<http://project-osrm.org/> for more information. This package allows to
-compute routes, trips, isochrones and travel distances matrices (travel
-time and kilometric distance).
+Related [Project-OSRM](https://github.com/Project-OSRM) repositories:
+- [osrm-frontend](https://github.com/Project-OSRM/osrm-frontend) - User-facing frontend with map. The demo server runs this on top of the backend
+- [osrm-text-instructions](https://github.com/Project-OSRM/osrm-text-instructions) - Text instructions from OSRM route response
+- [osrm-backend-docker](https://hub.docker.com/r/osrm/osrm-backend/) - Ready to use Docker images
 
-This package relies on the usage of a running OSRM service (tested with
-v5.24.0 of OSRM).
+## Documentation
 
-You can run your own instance of OSRM following guidelines provided
-[here](https://github.com/Project-OSRM/osrm-backend). The simplest
-solution is probably the one based on [docker
-containers](https://github.com/Project-OSRM/osrm-backend#using-docker).
+### Full documentation
 
-:warning: **You must be careful using the OSRM demo server and read the
-[*about* page](https://routing.openstreetmap.de/about.html) of the
-service**:  
-&gt; [One request per second max. No scraping, no heavy
-usage.](https://routing.openstreetmap.de/about.html)
+- [Hosted documentation](http://project-osrm.org)
+- [osrm-routed HTTP API documentation](docs/http.md)
+- [libosrm API documentation](docs/libosrm.md)
 
-:heavy\_exclamation\_mark: **To consider when using OSRM**:  
-&gt; [“Most of the previously active core devs have either moved on to
-new roles, or are simply busy on different projects
-(…)”](https://github.com/Project-OSRM/osrm-backend/issues/5463)
+## Contact
 
-## Features
+- IRC: `irc.oftc.net`, channel: `#osrm` ([Webchat](https://webchat.oftc.net))
+- Mailinglist: `https://lists.openstreetmap.org/listinfo/osrm-talk`
 
--   `osrmTable` Get travel time matrices between points.
+## Quick Start
 
--   `osrmRoute` Get the shortest path between two points.
+The easiest and quickest way to setup your own routing engine is to use Docker images we provide.
 
--   `osrmTrip` Get the travel geometry between multiple unordered
-    points.
+There are two pre-processing pipelines available:
+- Contraction Hierarchies (CH)
+- Multi-Level Dijkstra (MLD)
 
--   `osrmIsochrone` Get polygons of isochrones.
+we recommend using MLD by default except for special use-cases such as very large distance matrices where CH is still a better fit for the time being.
+In the following we explain the MLD pipeline.
+If you want to use the CH pipeline instead replace `osrm-partition` and `osrm-customize` with a single `osrm-contract` and change the algorithm option for `osrm-routed` to `--algorithm ch`.
 
-## Demo
+### Using Docker
 
-### `osrmTable`
+We base our Docker images ([backend](https://hub.docker.com/r/osrm/osrm-backend/), [frontend](https://hub.docker.com/r/osrm/osrm-frontend/)) on Debian and make sure they are as lightweight as possible.
 
-``` r
-library(osrm)
+Download OpenStreetMap extracts for example from [Geofabrik](http://download.geofabrik.de/)
+
+    wget http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
+
+Pre-process the extract with the car profile and start a routing engine HTTP server on port 5000
+
+    docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-extract -p /opt/car.lua /data/berlin-latest.osm.pbf
+
+The flag `-v "${PWD}:/data"` creates the directory `/data` inside the docker container and makes the current working directory `"${PWD}"` available there. The file `/data/berlin-latest.osm.pbf` inside the container is referring to `"${PWD}/berlin-latest.osm.pbf"` on the host.
+
+    docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-partition /data/berlin-latest.osrm
+    docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize /data/berlin-latest.osrm
+
+Note that `berlin-latest.osrm` has a different file extension. 
+
+    docker run -t -i -p 5000:5000 -v "${PWD}:/data" osrm/osrm-backend osrm-routed --algorithm mld /data/berlin-latest.osrm
+
+Make requests against the HTTP server
+
+    curl "http://127.0.0.1:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true"
+
+Optionally start a user-friendly frontend on port 9966, and open it up in your browser
+
+    docker run -p 9966:9966 osrm/osrm-frontend
+    xdg-open 'http://127.0.0.1:9966'
+
+In case Docker complains about not being able to connect to the Docker daemon make sure you are in the `docker` group.
+
+    sudo usermod -aG docker $USER
+
+After adding yourself to the `docker` group make sure to log out and back in again with your terminal.
+
+We support the following images on Docker Cloud:
+
+Name | Description
+-----|------
+`latest` | `master` compiled with release flag
+`latest-assertions` | `master` compiled with with release flag, assertions enabled and debug symbols
+`latest-debug` | `master` compiled with debug flag
+`<tag>` | specific tag compiled with release flag
+`<tag>-debug` | specific tag compiled with debug flag
+
+### Building from Source
+
+The following targets Ubuntu 16.04.
+For instructions how to build on different distributions, macOS or Windows see our [Wiki](https://github.com/Project-OSRM/osrm-backend/wiki).
+
+Install dependencies
+
+```bash
+sudo apt install build-essential git cmake pkg-config \
+libbz2-dev libxml2-dev libzip-dev libboost-all-dev \
+lua5.2 liblua5.2-dev libtbb-dev
 ```
 
-``` r
-data("berlin")
-# Travel time matrix
-distA <- osrmTable(loc = apotheke.sf[1:5,])
-distA$durations
+Compile and install OSRM binaries
+
+```bash
+mkdir -p build
+cd build
+cmake ..
+cmake --build .
+sudo cmake --build . --target install
 ```
 
-<small>
+### Request Against the Demo Server
 
-|            | 440338666 | 538057637 | 977657079 | 3770254015 | 364363337 |
-|:-----------|----------:|----------:|----------:|-----------:|----------:|
-| 440338666  |       0.0 |      21.4 |      34.1 |       19.5 |      11.7 |
-| 538057637  |      22.8 |       0.0 |      42.8 |       16.1 |      20.7 |
-| 977657079  |      34.1 |      43.3 |       0.0 |       31.2 |      27.4 |
-| 3770254015 |      22.3 |      15.3 |      30.7 |        0.0 |      12.7 |
-| 364363337  |      12.0 |      20.2 |      26.8 |       12.0 |       0.0 |
+Read the [API usage policy](https://github.com/Project-OSRM/osrm-backend/wiki/Demo-server).
 
-</small>
+Simple query with instructions and alternatives on Berlin:
 
-### `osrmRoute`
-
-``` r
-library(sf)
-library(maptiles)
-library(mapsf)
-# Route
-route <- osrmRoute(src = apotheke.sf[74,], dst = apotheke.sf[55,],
-                   overview = "full", returnclass = "sf")
-# Display
-osm <- get_tiles(x = route, crop = TRUE, zoom = 13)
-png("img/route.png", width = 693, height = 263)
-par(mar = c(0,0,0,0))
-plot_tiles(osm)
-mf_map(route, lwd = 4, add = TRUE, col = "black")
-mf_map(route, lwd = 1, col = "white", add = TRUE)
-mf_map(apotheke.sf[c(74,55),], pch = 20, col = "red", add = TRUE)
-mf_credits(get_credit("OpenStreetMap"), pos = "bottomright", cex = .9)
-dev.off()
+```
+curl "https://router.project-osrm.org/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true&alternatives=true"
 ```
 
-![](https://raw.githubusercontent.com/riatelab/osrm/master/img/route.png)
+### Using the Node.js Bindings
 
-### `osrmTrip`
+The Node.js bindings provide read-only access to the routing engine.
+We provide API documentation and examples [here](docs/nodejs/api.md).
 
-``` r
-# Trip 
-trips <- osrmTrip(loc = apotheke.sf[10:20,], returnclass="sf")
-trip <- trips[[1]]$trip
-# Display
-osm2 <- get_tiles(x = trip, crop = TRUE, zoom = 11)
-png("img/trip.png", width = 499, height = 420)
-par(mar = c(0,0,0,0))
-plot_tiles(osm2)
-mf_map(trip, col = "black", lwd = 4, add = TRUE )
-mf_map(trip, col = c("red", "white"), lwd = 1, add = TRUE)
-mf_map(apotheke.sf[10:20,], pch = 21, col = "red", cex = 1.5, add = TRUE)
-mf_credits(get_credit("OpenStreetMap"), pos = "bottomright", cex = .9)
-dev.off()
+You will need a modern `libstdc++` toolchain (`>= GLIBCXX_3.4.20`) for binary compatibility if you want to use the pre-built binaries.
+For older Ubuntu systems you can upgrade your standard library for example with:
+
+```
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update -y
+sudo apt-get install -y libstdc++-5-dev
 ```
 
-![](https://raw.githubusercontent.com/riatelab/osrm/master/img/trip.png)
+You can install the Node.js bindings via `npm install osrm` or from this repository either via
 
-### `osrmIsochrone`
+    npm install
 
-``` r
-bks <- seq(from = 0, to = 14, by = 2)
-iso <- osrmIsochrone(loc = apotheke.sf[87,], returnclass="sf",
-                     breaks = bks, res = 70)
-osm3 <- get_tiles(x = iso, crop = TRUE, zoom = 12)
-cols <- hcl.colors(n = 7, palette = "Emrld", alpha = 0.75, rev = F)
-png("img/iso.png", width = 604, height = 595)
-par(mar = c(0,0,0,0))
-plot_tiles(osm3)
-mf_theme(mar = c(0,0,0,0))
-mf_map(x = iso, var = "center", type = "choro", 
-       breaks = bks, border = NA, pal = cols,
-       leg_pos = "topleft", leg_frame = T,
-       leg_title = "Isochrones\n(min)",
-       leg_title_cex = 1, leg_val_cex = .8,
-       add = TRUE)
-mf_map(apotheke.sf[87,], pch = 21, col = "red", 
-       cex = 1.5, add=TRUE)
-mf_credits(get_credit("OpenStreetMap"), cex = .9)
-dev.off()
+which will check and use pre-built binaries if they're available for this release and your Node version, or via
+
+    npm install --build-from-source
+
+to always force building the Node.js bindings from source.
+
+For usage details have a look [these API docs](docs/nodejs/api.md). 
+
+An exemplary implementation by a 3rd party with Docker and Node.js can be found [here](https://github.com/door2door-io/osrm-express-server-demo).
+
+
+## References in publications
+
+When using the code in a (scientific) publication, please cite
+
 ```
-
-![](https://raw.githubusercontent.com/riatelab/osrm/master/img/iso.png)
-
-## Installation
-
--   Development version on GitHub
-
-``` r
-remotes::install_github("riatelab/osrm")
+@inproceedings{luxen-vetter-2011,
+ author = {Luxen, Dennis and Vetter, Christian},
+ title = {Real-time routing with OpenStreetMap data},
+ booktitle = {Proceedings of the 19th ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems},
+ series = {GIS '11},
+ year = {2011},
+ isbn = {978-1-4503-1031-4},
+ location = {Chicago, Illinois},
+ pages = {513--516},
+ numpages = {4},
+ url = {http://doi.acm.org/10.1145/2093973.2094062},
+ doi = {10.1145/2093973.2094062},
+ acmid = {2094062},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
 ```
-
--   Stable version on [CRAN](https://CRAN.R-project.org/package=osrm/)
-
-``` r
-install.packages("osrm")
-```
-
-## Community Guidelines
-
-One can contribute to the package through [pull
-requests](https://github.com/riatelab/osrm/pulls) and report issues or
-ask questions [here](https://github.com/riatelab/osrm/issues).
