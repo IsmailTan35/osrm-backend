@@ -128,12 +128,6 @@ Status MatchPlugin::HandleRequest(const RoutingAlgorithmsInterface &algorithms,
 
     BOOST_ASSERT(parameters.IsValid());
 
-    // enforce maximum number of locations for performance reasons
-    if (max_locations_map_matching > 0 &&
-        static_cast<int>(parameters.coordinates.size()) > max_locations_map_matching)
-    {
-        return Error("TooBig", "Too many trace coordinates", result);
-    }
 
     if (!CheckAllCoordinates(parameters.coordinates))
     {
